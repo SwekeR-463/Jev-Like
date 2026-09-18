@@ -3,32 +3,32 @@
     "mode": "autoregressive",
     "cases": 20,
     "fields": 60,
-    "accuracy": 0.6667,
+    "accuracy": 0.8167,
     "schema_validity": 1.0,
-    "mean_ms": 245.19,
-    "p95_ms": 256.8,
-    "ece": 0.3333,
-    "mean_tokens": 29.2,
-    "tokens_per_s": 140.0,
-    "model": "Qwen/Qwen3.5-0.8B"
+    "mean_ms": 325.93,
+    "p95_ms": 400.1,
+    "ece": 0.1833,
+    "mean_tokens": 19.4,
+    "tokens_per_s": 67.3,
+    "model": "Qwen/Qwen3.5-2B"
   },
   {
     "mode": "parallel",
     "cases": 20,
     "fields": 60,
-    "accuracy": 0.6,
+    "accuracy": 0.6333,
     "schema_validity": 1.0,
-    "mean_ms": 29.85,
-    "p95_ms": 32.07,
-    "ece": 0.1206,
-    "mean_tokens": 20.6,
-    "tokens_per_s": 2132.6,
-    "model": "Qwen/Qwen3.5-0.8B"
+    "mean_ms": 55.3,
+    "p95_ms": 61.24,
+    "ece": 0.1354,
+    "mean_tokens": 20.8,
+    "tokens_per_s": 1142.3,
+    "model": "Qwen/Qwen3.5-2B"
   },
   {
     "mode": "comparison",
-    "model": "Qwen/Qwen3.5-0.8B",
-    "mean_speedup": 8.21,
-    "p95_speedup": 8.01
+    "model": "Qwen/Qwen3.5-2B",
+    "mean_speedup": 5.89,
+    "p95_speedup": 6.53
   }
 ]

@@ -5,9 +5,11 @@
     "fields": 60,
     "accuracy": 0.5333,
     "schema_validity": 1.0,
-    "mean_ms": 119.18,
-    "p95_ms": 133.1,
+    "mean_ms": 115.7,
+    "p95_ms": 130.47,
     "ece": 0.4667,
+    "mean_tokens": 30.6,
+    "tokens_per_s": 284.1,
     "model": "LiquidAI/LFM2.5-VL-450M-MLX-bf16"
   },
   {
@@ -16,15 +18,17 @@
     "fields": 60,
     "accuracy": 0.5167,
     "schema_validity": 1.0,
-    "mean_ms": 13.57,
-    "p95_ms": 14.29,
+    "mean_ms": 13.83,
+    "p95_ms": 14.63,
     "ece": 0.337,
+    "mean_tokens": 25.6,
+    "tokens_per_s": 5599.9,
     "model": "LiquidAI/LFM2.5-VL-450M-MLX-bf16"
   },
   {
     "mode": "comparison",
     "model": "LiquidAI/LFM2.5-VL-450M-MLX-bf16",
-    "mean_speedup": 8.78,
-    "p95_speedup": 9.31
+    "mean_speedup": 8.37,
+    "p95_speedup": 8.92
   }
 ]

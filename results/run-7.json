@@ -3,28 +3,32 @@
     "mode": "autoregressive",
     "cases": 20,
     "fields": 60,
-    "accuracy": 0.6,
-    "schema_validity": 0.95,
-    "mean_ms": 459.15,
-    "p95_ms": 518.18,
-    "ece": 0.4,
+    "accuracy": 0.5833,
+    "schema_validity": 0.9,
+    "mean_ms": 458.37,
+    "p95_ms": 521.99,
+    "ece": 0.4167,
+    "mean_tokens": 44.6,
+    "tokens_per_s": 102.7,
     "model": "mlx-community/Llama-3.2-1B-Instruct-bf16"
   },
   {
     "mode": "parallel",
     "cases": 20,
     "fields": 60,
-    "accuracy": 0.4333,
+    "accuracy": 0.4667,
     "schema_validity": 1.0,
-    "mean_ms": 33.44,
-    "p95_ms": 36.6,
-    "ece": 0.2715,
+    "mean_ms": 33.6,
+    "p95_ms": 36.49,
+    "ece": 0.2896,
+    "mean_tokens": 21.6,
+    "tokens_per_s": 1866.2,
     "model": "mlx-community/Llama-3.2-1B-Instruct-bf16"
   },
   {
     "mode": "comparison",
     "model": "mlx-community/Llama-3.2-1B-Instruct-bf16",
-    "mean_speedup": 13.73,
-    "p95_speedup": 14.16
+    "mean_speedup": 13.64,
+    "p95_speedup": 14.31
   }
 ]

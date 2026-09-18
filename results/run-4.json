@@ -5,9 +5,11 @@
     "fields": 60,
     "accuracy": 0.7167,
     "schema_validity": 1.0,
-    "mean_ms": 368.95,
-    "p95_ms": 438.87,
+    "mean_ms": 352.93,
+    "p95_ms": 409.77,
     "ece": 0.2833,
+    "mean_tokens": 24.3,
+    "tokens_per_s": 75.0,
     "model": "mlx-community/Qwen3-1.7B-bf16"
   },
   {
@@ -16,15 +18,17 @@
     "fields": 60,
     "accuracy": 0.6,
     "schema_validity": 1.0,
-    "mean_ms": 45.9,
-    "p95_ms": 51.16,
+    "mean_ms": 46.13,
+    "p95_ms": 52.0,
     "ece": 0.3943,
+    "mean_tokens": 20.8,
+    "tokens_per_s": 1237.7,
     "model": "mlx-community/Qwen3-1.7B-bf16"
   },
   {
     "mode": "comparison",
     "model": "mlx-community/Qwen3-1.7B-bf16",
-    "mean_speedup": 8.04,
-    "p95_speedup": 8.58
+    "mean_speedup": 7.65,
+    "p95_speedup": 7.88
   }
 ]

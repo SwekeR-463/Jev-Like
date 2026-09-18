@@ -5,9 +5,11 @@
     "fields": 60,
     "accuracy": 0.7167,
     "schema_validity": 1.0,
-    "mean_ms": 287.8,
-    "p95_ms": 308.63,
+    "mean_ms": 273.46,
+    "p95_ms": 296.8,
     "ece": 0.2833,
+    "mean_tokens": 28.8,
+    "tokens_per_s": 113.6,
     "model": "mlx-community/LFM2.5-VL-1.6B-bf16"
   },
   {
@@ -16,15 +18,17 @@
     "fields": 60,
     "accuracy": 0.5667,
     "schema_validity": 1.0,
-    "mean_ms": 33.04,
-    "p95_ms": 34.73,
+    "mean_ms": 31.82,
+    "p95_ms": 33.81,
     "ece": 0.198,
+    "mean_tokens": 26.1,
+    "tokens_per_s": 2279.9,
     "model": "mlx-community/LFM2.5-VL-1.6B-bf16"
   },
   {
     "mode": "comparison",
     "model": "mlx-community/LFM2.5-VL-1.6B-bf16",
-    "mean_speedup": 8.71,
-    "p95_speedup": 8.89
+    "mean_speedup": 8.59,
+    "p95_speedup": 8.78
   }
 ]

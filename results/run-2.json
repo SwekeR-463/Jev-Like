@@ -5,9 +5,11 @@
     "fields": 60,
     "accuracy": 0.2,
     "schema_validity": 0.3,
-    "mean_ms": 95.96,
-    "p95_ms": 124.18,
+    "mean_ms": 96.85,
+    "p95_ms": 122.74,
     "ece": 0.8,
+    "mean_tokens": 26.3,
+    "tokens_per_s": 295.4,
     "model": "mlx-community/gemma-3-270m-it-bf16"
   },
   {
@@ -16,15 +18,17 @@
     "fields": 60,
     "accuracy": 0.4833,
     "schema_validity": 1.0,
-    "mean_ms": 12.53,
-    "p95_ms": 12.94,
+    "mean_ms": 12.79,
+    "p95_ms": 12.95,
     "ece": 0.3563,
+    "mean_tokens": 21,
+    "tokens_per_s": 4976.9,
     "model": "mlx-community/gemma-3-270m-it-bf16"
   },
   {
     "mode": "comparison",
     "model": "mlx-community/gemma-3-270m-it-bf16",
-    "mean_speedup": 7.66,
-    "p95_speedup": 9.6
+    "mean_speedup": 7.57,
+    "p95_speedup": 9.48
   }
 ]

@@ -310,3 +310,12 @@ The parallel path was `14.05×` faster by mean and `14.45×` by p95, but lost `1
 6. Moved tests to `tests/` and dropped the importlib file-loading workaround for the demo script. Dataset paths now resolve from the module location rather than the working directory.
 7. Verified the restructure is behavior-preserving: Qwen3.5-0.8B reproduces `run-9.json` exactly on accuracy, schema validity, ECE, and mean token counts, and `comparison.mp4` re-renders to the same byte size.
 8. Left in place: `results/run-N.json` is still numbered by position in the suite list, so it is not a stable identifier. Each file carries a `model` field, and `model_comparison.json` is the canonical record.
+
+## 2026-09-18 — Full suite re-run including the Qwen3.5 checkpoints
+
+1. Ran `jev_like.benchmark --all` on an idle host (load average 2.6, after a reboot cleared the earlier background job), so all nine checkpoints were measured under the same conditions.
+2. `results/model_comparison.json` and `.md` had been stale since before the Qwen3.5 work: both still listed the original seven checkpoints. They now cover all nine, with the decode-rate columns.
+3. Removed `results/run-10.json`. It was an out-of-band run of Qwen3.5-2B from the earlier manual measurement, and the suite re-run writes that model to `run-9.json` as list position 9, leaving run-10 as a duplicate.
+4. Replaced the README results table. It had drifted badly: it still named 4-bit and 8-bit checkpoints (Qwen2.5 1.5B 4-bit, Qwen3 1.7B 4-bit, Qwen3 0.6B 8-bit, LFM2.5-VL 1.6B 4-bit) with numbers matching no run file in the repository. It now carries the generated BF16 table.
+5. Llama 3.2 1B autoregressive accuracy moved from 60.0% to 58.3%, one field out of sixty. Greedy decoding is deterministic per run, so this is a near-tie in the logits resolved differently, not a code change; the fresh run is the recorded one.
+6. Promoted `demo/live.mp4` to the headline demo in the README, replacing the Qwen3-1.7B comparison animation in that role. The animation is still documented, but second.

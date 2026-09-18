@@ -3,14 +3,14 @@
     "mode": "autoregressive",
     "cases": 20,
     "fields": 60,
-    "accuracy": 0.7167,
+    "accuracy": 0.6667,
     "schema_validity": 1.0,
-    "mean_ms": 709.19,
-    "p95_ms": 1085.47,
-    "ece": 0.2833,
-    "mean_tokens": 24.3,
-    "tokens_per_s": 39.9,
-    "model": "mlx-community/Qwen3-1.7B-bf16"
+    "mean_ms": 235.06,
+    "p95_ms": 265.81,
+    "ece": 0.3333,
+    "mean_tokens": 29.2,
+    "tokens_per_s": 135.5,
+    "model": "Qwen/Qwen3.5-0.8B"
   },
   {
     "mode": "parallel",
@@ -18,17 +18,17 @@
     "fields": 60,
     "accuracy": 0.6,
     "schema_validity": 1.0,
-    "mean_ms": 118.92,
-    "p95_ms": 147.75,
-    "ece": 0.3943,
-    "mean_tokens": 20.8,
-    "tokens_per_s": 498.9,
-    "model": "mlx-community/Qwen3-1.7B-bf16"
+    "mean_ms": 29.35,
+    "p95_ms": 31.28,
+    "ece": 0.1206,
+    "mean_tokens": 20.6,
+    "tokens_per_s": 2191.8,
+    "model": "Qwen/Qwen3.5-0.8B"
   },
   {
     "mode": "comparison",
-    "model": "mlx-community/Qwen3-1.7B-bf16",
-    "mean_speedup": 5.96,
-    "p95_speedup": 7.35
+    "model": "Qwen/Qwen3.5-0.8B",
+    "mean_speedup": 8.01,
+    "p95_speedup": 8.5
   }
 ]

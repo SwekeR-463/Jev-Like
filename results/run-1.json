@@ -5,9 +5,11 @@
     "fields": 60,
     "accuracy": 0.7,
     "schema_validity": 1.0,
-    "mean_ms": 381.18,
-    "p95_ms": 427.11,
+    "mean_ms": 396.15,
+    "p95_ms": 457.38,
     "ece": 0.3,
+    "mean_tokens": 28.4,
+    "tokens_per_s": 77.9,
     "model": "mlx-community/Qwen2.5-1.5B-Instruct-bf16"
   },
   {
@@ -16,15 +18,17 @@
     "fields": 60,
     "accuracy": 0.5667,
     "schema_validity": 1.0,
-    "mean_ms": 44.15,
-    "p95_ms": 47.83,
+    "mean_ms": 44.38,
+    "p95_ms": 47.66,
     "ece": 0.2549,
+    "mean_tokens": 20.5,
+    "tokens_per_s": 1367.1,
     "model": "mlx-community/Qwen2.5-1.5B-Instruct-bf16"
   },
   {
     "mode": "comparison",
     "model": "mlx-community/Qwen2.5-1.5B-Instruct-bf16",
-    "mean_speedup": 8.63,
-    "p95_speedup": 8.93
+    "mean_speedup": 8.93,
+    "p95_speedup": 9.6
   }
 ]
