@@ -8,6 +8,23 @@ A minimal experiment reproducing the public core of Harsha Gundala's approach:
 
 The Level 2 `score` is conditional on the allowed choices. It is not calibrated confidence.
 
+## Layout
+
+```text
+jev_like/
+  runtime.py     model loading plus the autoregressive and parallel inference paths
+  benchmark.py   dataset, metrics, per-mode evaluation, and the CLI
+demo/
+  video.py       shared palette, fonts, and the FFmpeg writer
+  render.py      the comparison animation
+  live.py        a real single-case run, printed and optionally replayed
+tests/           model-free unit tests
+data/            the labeled decision cases
+results/         measured runs, one JSON file per checkpoint
+```
+
+Inference and evaluation are deliberately separate: `runtime.py` returns measurements but takes no view on how they should be scored, and every metric lives in `benchmark.py`.
+
 ## Demo
 
 [Side-by-side comparison video](demo/comparison.mp4) — Qwen3-1.7B BF16, using measured local mean latency. The animation is intentionally slowed so the inference paths are visible.
@@ -21,26 +38,20 @@ sh demo/render.sh
 [Live single-case demo](demo/live.mp4) — one real ticket run through both paths on Qwen3.5-2B BF16: the parallel readout scores 3/3 against the autoregressive path's 2/3, at roughly 6x lower latency. The numbers and the JSON come from an actual run; only the replay pacing is artificial.
 
 ```bash
-uv run --python 3.12 python demo/live.py          # real run, prints the transcript
-uv run --python 3.12 python demo/live.py --video  # also writes demo/live.mp4
+uv run --python 3.12 python -m demo.live          # real run, prints the transcript
+uv run --python 3.12 python -m demo.live --video  # also writes demo/live.mp4
 ```
 
 ## Run
 
 ```bash
-uv run --python 3.12 python -m unittest
-uv run --python 3.12 benchmark.py --mode parallel
-uv run --python 3.12 benchmark.py --mode both
-uv run --python 3.12 benchmark.py --mode both --model mlx-community/gemma-3-270m-it-bf16
-uv run --python 3.12 benchmark.py --mode both --model mlx-community/LFM2.5-VL-1.6B-4bit
-uv run --python 3.12 benchmark.py --mode both --model Qwen/Qwen3-1.7B-MLX-4bit
-uv run --python 3.12 benchmark.py --mode both --model Qwen/Qwen3-0.6B-MLX-8bit
-uv run --python 3.12 benchmark.py --mode both --model LiquidAI/LFM2.5-VL-450M-MLX-bf16
-uv run --python 3.12 benchmark.py --mode both --model mlx-community/Llama-3.2-1B-Instruct-bf16
-uv run --python 3.12 benchmark_all.py
+uv run --python 3.12 python -m unittest discover -s tests -t .
+uv run --python 3.12 python -m jev_like.benchmark --mode parallel
+uv run --python 3.12 python -m jev_like.benchmark --mode both --model Qwen/Qwen3.5-2B
+uv run --python 3.12 python -m jev_like.benchmark --all
 ```
 
-`benchmark_all.py` runs all seven supported local checkpoints and writes [the full JSON results](results/model_comparison.json) plus [a Markdown comparison](results/model_comparison.md). Each mode gets an unmeasured warm-up inference before its 20 measured cases.
+`--all` runs every checkpoint in `jev_like.benchmark.MODELS` in its own process, so models never stack in memory, and writes [the full JSON results](results/model_comparison.json) plus [a Markdown comparison](results/model_comparison.md). Each mode gets an unmeasured warm-up inference before its 20 measured cases.
 
 ## Current 20-case result
 

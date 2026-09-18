@@ -1,4 +1,4 @@
-"""Minimal autoregressive and parallel constrained decision engines for MLX."""
+"""Autoregressive and parallel constrained decision engines for MLX."""
 
 from __future__ import annotations
 
@@ -14,8 +14,9 @@ import mlx.core as mx
 from mlx_lm import load
 from mlx_lm.models.cache import make_prompt_cache
 
-MODEL_ID = os.getenv("MODEL_ID", "mlx-community/Qwen2.5-1.5B-Instruct-4bit")
-_model = _tokenizer = None
+DEFAULT_MODEL_ID = os.getenv("MODEL_ID", "mlx-community/Qwen2.5-1.5B-Instruct-4bit")
+
+_engines: dict[str, tuple[Any, Any]] = {}
 
 
 @dataclass(frozen=True)
@@ -34,28 +35,28 @@ def parse_schema(raw: dict[str, Any]) -> dict[str, Field]:
     return schema
 
 
-def get_engine():
-    global _model, _tokenizer
-    if _model is None:
+def get_engine(model_id: str = DEFAULT_MODEL_ID):
+    """Load and cache one engine per model, so a process can switch models safely."""
+    if model_id not in _engines:
         started = time.perf_counter()
-        print(f"Loading {MODEL_ID}…")
+        print(f"Loading {model_id}…")
         try:
-            _model, _tokenizer = load(MODEL_ID)
+            model, tokenizer = load(model_id)
         except ValueError as error:
             if "not supported" not in str(error):
                 raise
             from mlx_vlm import load as load_vlm
 
-            vlm, processor = load_vlm(MODEL_ID)
+            vlm, processor = load_vlm(model_id)
             if not hasattr(vlm, "language_model"):
-                raise ValueError(f"{MODEL_ID} is unsupported by mlx-lm and is not an MLX-VLM model") from error
-            _model = vlm.language_model
-            _tokenizer = getattr(processor, "tokenizer", processor)
-        warmup = _make_cache(_model)
-        logits = _forward(_model, mx.array([_tokenizer.encode("warmup")]), warmup)
+                raise ValueError(f"{model_id} is unsupported by mlx-lm and is not an MLX-VLM model") from error
+            model = vlm.language_model
+            tokenizer = getattr(processor, "tokenizer", processor)
+        logits = _forward(model, mx.array([tokenizer.encode("warmup")]), _make_cache(model))
         mx.eval(logits)
+        _engines[model_id] = (model, tokenizer)
         print(f"Loaded and warmed in {time.perf_counter() - started:.1f}s")
-    return _model, _tokenizer
+    return _engines[model_id]
 
 
 def _make_cache(model):
@@ -67,9 +68,9 @@ def _forward(model, tokens, cache):
     return output.logits if hasattr(output, "logits") else output
 
 
-def _chat_prompt(tokenizer, instruction: str) -> str:
+def _chat_prompt(tokenizer, model_id: str, instruction: str) -> str:
     """Use each model's native chat template; Gemma does not accept a system role."""
-    if "qwen3" in MODEL_ID.lower():
+    if "qwen3" in model_id.lower():
         instruction += "\n/no_think"
     if hasattr(tokenizer, "apply_chat_template"):
         return tokenizer.apply_chat_template(
@@ -81,10 +82,11 @@ def _chat_prompt(tokenizer, instruction: str) -> str:
     return instruction + "\nAnswer:\n"
 
 
-def _prompt(tokenizer, context: str, schema: dict[str, Field]) -> str:
+def _prompt(tokenizer, model_id: str, context: str, schema: dict[str, Field]) -> str:
     lines = [f'  "{name}": one of {list(field.choices)} // {field.description}' for name, field in schema.items()]
     return _chat_prompt(
         tokenizer,
+        model_id,
         "Return only a valid JSON object matching this schema:\n"
         + "{\n" + "\n".join(lines) + "\n}\n"
         + f"Context:\n{context}",
@@ -108,13 +110,18 @@ def _valid(value: dict[str, Any] | None, schema: dict[str, Field]) -> bool:
     return all(str(value[name]).lower() in field.choices for name, field in schema.items())
 
 
-def generate_json(context: str, raw_schema: dict[str, Any], max_tokens: int = 160) -> dict[str, Any]:
+def generate_json(
+    context: str,
+    raw_schema: dict[str, Any],
+    max_tokens: int = 160,
+    model_id: str = DEFAULT_MODEL_ID,
+) -> dict[str, Any]:
     """Level 1: ordinary token-by-token JSON generation baseline."""
-    model, tokenizer = get_engine()
+    model, tokenizer = get_engine(model_id)
     schema = parse_schema(raw_schema)
     cache = _make_cache(model)
     started = time.perf_counter()
-    logits = _forward(model, mx.array([tokenizer.encode(_prompt(tokenizer, context, schema))]), cache)
+    logits = _forward(model, mx.array([tokenizer.encode(_prompt(tokenizer, model_id, context, schema))]), cache)
     mx.eval(logits)
     prefill_ms = (time.perf_counter() - started) * 1000
     decode_started = time.perf_counter()
@@ -167,9 +174,13 @@ def _readout(tokenizer, field: Field) -> tuple[list[int], str]:
     return token_ids, ", ".join(f"{labels[i]}={choice}" for i, choice in enumerate(field.choices))
 
 
-def decide_parallel(context: str, raw_schema: dict[str, Any]) -> dict[str, Any]:
+def decide_parallel(
+    context: str,
+    raw_schema: dict[str, Any],
+    model_id: str = DEFAULT_MODEL_ID,
+) -> dict[str, Any]:
     """Level 2: one prefill plus one batched suffix pass for every field."""
-    model, tokenizer = get_engine()
+    model, tokenizer = get_engine(model_id)
     schema = parse_schema(raw_schema)
     readouts = {name: _readout(tokenizer, field) for name, field in schema.items()}
     catalog = "\n".join(
@@ -177,6 +188,7 @@ def decide_parallel(context: str, raw_schema: dict[str, Any]) -> dict[str, Any]:
     )
     prefix = _chat_prompt(
         tokenizer,
+        model_id,
         "Choose the best exact choice for each requested field.\n"
         f"{catalog}\nContext:\n{context}",
     )
@@ -193,19 +205,7 @@ def decide_parallel(context: str, raw_schema: dict[str, Any]) -> dict[str, Any]:
     mx.eval(prefill)
     prefill_ms = (time.perf_counter() - started) * 1000
 
-    batch_size = len(schema)
-    batch_cache = []
-    cache_arrays = []
-    for part in cache:
-        clone = copy.copy(part)
-        if getattr(part, "keys", None) is not None:
-            clone.keys = mx.repeat(part.keys, batch_size, axis=0)
-            clone.values = mx.repeat(part.values, batch_size, axis=0)
-            cache_arrays.extend((clone.keys, clone.values))
-        if getattr(part, "cache", None):
-            clone.cache = [mx.repeat(value, batch_size, axis=0) if value is not None else None for value in part.cache]
-            cache_arrays.extend(value for value in clone.cache if value is not None)
-        batch_cache.append(clone)
+    batch_cache, cache_arrays = _broadcast_cache(cache, len(schema))
     mx.eval(*cache_arrays)
 
     suffix_started = time.perf_counter()
@@ -249,16 +249,19 @@ def decide_parallel(context: str, raw_schema: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def expected_calibration_error(confidences: list[float], correct: list[bool], bins: int = 10) -> float:
-    """Level 0 metric; useful now, corrected with held-out calibration at Level 4."""
-    if not confidences:
-        return 0.0
-    total = 0.0
-    for index in range(bins):
-        low, high = index / bins, (index + 1) / bins
-        members = [i for i, score in enumerate(confidences) if low <= score <= high and (score < high or high == 1)]
-        if members:
-            accuracy = sum(correct[i] for i in members) / len(members)
-            confidence = sum(confidences[i] for i in members) / len(members)
-            total += len(members) / len(confidences) * abs(accuracy - confidence)
-    return total
+def _broadcast_cache(cache, batch_size: int) -> tuple[list[Any], list[Any]]:
+    """Replicate a single-sequence prompt cache across every schema field."""
+    batch_cache, arrays = [], []
+    for part in cache:
+        clone = copy.copy(part)
+        if getattr(part, "keys", None) is not None:
+            clone.keys = mx.repeat(part.keys, batch_size, axis=0)
+            clone.values = mx.repeat(part.values, batch_size, axis=0)
+            arrays.extend((clone.keys, clone.values))
+        if getattr(part, "cache", None):
+            clone.cache = [
+                mx.repeat(value, batch_size, axis=0) if value is not None else None for value in part.cache
+            ]
+            arrays.extend(value for value in clone.cache if value is not None)
+        batch_cache.append(clone)
+    return batch_cache, arrays

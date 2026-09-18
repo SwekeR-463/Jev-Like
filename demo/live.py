@@ -1,40 +1,29 @@
 """Live single-case demo of the parallel constrained readout.
 
-Runs the real model on one benchmark case, prints a terminal transcript, and
-optionally replays that transcript into a video. The numbers are measured; only
-the pacing of the replay is artificial.
+Runs the real model on one benchmark case, prints a terminal transcript, and can
+replay that transcript into a video. The numbers and the JSON are measured; only
+the replay pacing is artificial.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import subprocess
-import sys
 import textwrap
 import time
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from demo.video import ACCENT, BORDER, FPS, H, MUTED, TEXT, WARM, font, new_frame, write_video
+from jev_like import decide_parallel, generate_json, get_engine
+from jev_like.benchmark import DEFAULT_DATA, load_cases
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-
-import jev_like  # noqa: E402  (the repo root must be importable first)
-from jev_like import decide_parallel, generate_json, get_engine  # noqa: E402
-
-BG, TEXT, DIM, ACCENT, WARM = "#0a0a0b", "#f5f5f7", "#5f5f68", "#ff7a18", "#a4836a"
-MONO = "/System/Library/Fonts/SFNSMono.ttf"
-W, H, FPS, HOLD_SECONDS = 1280, 720, 30, 3.5
-LINE_HEIGHT = 30
+OUTPUT = Path(__file__).with_name("live.mp4")
+DEFAULT_MODEL = "Qwen/Qwen3.5-2B"
+TERMINAL_BOX = (40, 30, 1240, 690)
+HOLD_SECONDS, LINE_HEIGHT = 3.5, 30
 
 
-def load_case(path: Path, index: int) -> dict:
-    cases = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-    return cases[index - 1]
-
-
-def transcript(model: str, case: dict, auto: dict, par: dict) -> list[tuple[str, str]]:
+def transcript(model_id: str, case: dict, auto: dict, par: dict) -> list[tuple[str, str]]:
     produced = json.dumps(auto["value"] if auto["value"] is not None else {})
     choices = {name: entry["value"] for name, entry in par["value"].items()}
     matches = sum(
@@ -43,22 +32,22 @@ def transcript(model: str, case: dict, auto: dict, par: dict) -> list[tuple[str,
         if str(choices.get(name)).lower() == str(expected).lower()
     )
 
-    lines: list[tuple[str, str]] = [("$ jev-like --model " + model, DIM), ("", TEXT), ("INPUT", DIM)]
+    lines: list[tuple[str, str]] = [("$ jev-like --model " + model_id, MUTED), ("", TEXT), ("INPUT", MUTED)]
     for wrapped in textwrap.wrap(case["context"], 76):
         lines.append(("  " + wrapped, TEXT))
     lines += [
         ("", TEXT),
-        ("SCHEMA", DIM),
+        ("SCHEMA", MUTED),
         ("  " + ", ".join(f"{name}: {spec['type']}" for name, spec in case["schema"].items()), TEXT),
         ("", TEXT),
-        (f"AUTOREGRESSIVE JSON · {auto['forward_passes']} tokens", DIM),
+        (f"AUTOREGRESSIVE JSON · {auto['forward_passes']} tokens", MUTED),
     ]
     for wrapped in textwrap.wrap("  " + produced, 76):
         lines.append((wrapped, WARM))
     lines += [
         (f"  {auto['elapsed_ms']:.1f} ms total · {auto['tokens_per_s']:.1f} tok/s decode", WARM),
         ("", TEXT),
-        ("PARALLEL CONSTRAINED READOUT · 1 batched pass", DIM),
+        ("PARALLEL CONSTRAINED READOUT · 1 batched pass", MUTED),
     ]
     for name, entry in par["value"].items():
         label = f'  "{name}": "{entry["value"]}"'
@@ -71,60 +60,49 @@ def transcript(model: str, case: dict, auto: dict, par: dict) -> list[tuple[str,
             f"{matches}/{len(case['expected'])} fields match expected",
             ACCENT,
         ),
-        (f"Real run · measured locally · {model}", DIM),
+        (f"Real run · measured locally · {model_id}", MUTED),
     ]
     return lines
 
 
-def frame(lines: list[tuple[str, str]], reveal_at: float, t: float) -> Image.Image:
-    image = Image.new("RGB", (W, H), BG)
-    draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((40, 30, W - 40, H - 30), 10, outline="#26262b", width=1)
+def frame(lines: list[tuple[str, str]], reveal_at: float, t: float):
+    image, draw = new_frame()
+    draw.rounded_rectangle(TERMINAL_BOX, 10, outline=BORDER, width=1)
     # Fit the whole transcript inside the terminal box, whatever its length.
     step = min(LINE_HEIGHT, (H - 100) // max(len(lines), 1))
-    font = ImageFont.truetype(MONO, min(19, step - 6))
+    text_font = font(min(19, step - 6), mono=True)
     for index, (text, color) in enumerate(lines):
         if reveal_at * (index + 1) > t:
             break
         if text:
-            draw.text((72, 70 + index * step), text, font=font, fill=color)
+            draw.text((72, 70 + index * step), text, font=text_font, fill=color)
     return image
 
 
-def render(lines: list[tuple[str, str]], output: Path, reveal_at: float) -> None:
+def render(lines: list[tuple[str, str]], output: Path, reveal_at: float) -> Path:
     total = reveal_at * len(lines) + HOLD_SECONDS
-    command = [
-        "ffmpeg", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-        "-r", str(FPS), "-i", "-", "-an", "-c:v", "libx264", "-preset", "medium",
-        "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output),
-    ]
-    with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
-        for index in range(int(total * FPS)):
-            process.stdin.write(frame(lines, reveal_at, index / FPS).tobytes())
-        process.stdin.close()
-        if process.wait():
-            raise SystemExit("ffmpeg failed")
+    frames = (frame(lines, reveal_at, index / FPS) for index in range(int(total * FPS)))
+    return write_video(frames, output)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="Qwen/Qwen3.5-2B")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
     # Case 4 is the clearest single-case contrast: the parallel readout scores 3/3
     # against the autoregressive path's 2/3 on this model.
     parser.add_argument("--case", type=int, default=4)
-    parser.add_argument("--data", type=Path, default=ROOT / "data/benchmark.jsonl")
+    parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--video", action="store_true", help="also replay the run into an MP4")
     parser.add_argument("--reveal-ms", type=float, default=190.0, help="replay pacing, not a measurement")
-    parser.add_argument("--out", type=Path, default=Path(__file__).with_name("live.mp4"))
+    parser.add_argument("--out", type=Path, default=OUTPUT)
     args = parser.parse_args()
 
-    case = load_case(args.data, args.case)
-    jev_like.MODEL_ID = args.model
-    get_engine()
-    decide_parallel(case["context"], case["schema"])  # unmeasured warm-up
+    case = load_cases(args.data)[args.case - 1]
+    get_engine(args.model)
+    decide_parallel(case["context"], case["schema"], model_id=args.model)  # unmeasured warm-up
     started = time.perf_counter()
-    auto = generate_json(case["context"], case["schema"])
-    par = decide_parallel(case["context"], case["schema"])
+    auto = generate_json(case["context"], case["schema"], model_id=args.model)
+    par = decide_parallel(case["context"], case["schema"], model_id=args.model)
     print(f"both paths ran in {time.perf_counter() - started:.1f}s wall clock\n")
 
     lines = transcript(args.model, case, auto, par)
@@ -132,8 +110,7 @@ def main() -> None:
         print(text)
 
     if args.video:
-        render(lines, args.out, args.reveal_ms / 1000)
-        print(f"\n{args.out}")
+        print(f"\n{render(lines, args.out, args.reveal_ms / 1000)}")
 
 
 if __name__ == "__main__":

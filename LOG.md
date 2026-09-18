@@ -299,3 +299,14 @@ The parallel path was `14.05×` faster by mean and `14.45×` by p95, but lost `1
 3. Case 4 is the clearest contrast of the 20. Across the whole set the autoregressive path was ahead more often than not, so the demo should not be read as an aggregate accuracy claim.
 4. Sourced the framing from Harsha Gundala's original post announcing Qwen-2.5-1B-RLCD with an on-device video demo, and kept it hardware-neutral.
 5. Added a unit test covering the transcript match count and speedup arithmetic, which needs no model.
+
+## 2026-09-18 — Repository restructure
+
+1. Moved the flat top-level modules into packages. `jev_like.py` split into `jev_like/runtime.py` for inference and `jev_like/benchmark.py` for the dataset, metrics, evaluation, and CLI; the evaluation metric no longer lives in the model module.
+2. Folded `benchmark_all.py` into `jev_like.benchmark --all`, so the suite list, the per-model run loop, and the comparison table live with the harness instead of in a second script. Each model still runs in its own process so checkpoints do not stack in memory.
+3. Removed the mutable `MODEL_ID` global. `get_engine` now caches one engine per model id and every call takes the model explicitly, so a process can switch models without reassigning module state.
+4. Added `demo/video.py` holding the palette, font helpers, and the FFmpeg writer. `demo/render.py` and `demo/live.py` previously duplicated all of that, including the ffmpeg command line.
+5. Removed the `sys.path` hack in `demo/live.py`. Both demos now run as modules from the repository root, which puts the root on the path naturally.
+6. Moved tests to `tests/` and dropped the importlib file-loading workaround for the demo script. Dataset paths now resolve from the module location rather than the working directory.
+7. Verified the restructure is behavior-preserving: Qwen3.5-0.8B reproduces `run-9.json` exactly on accuracy, schema validity, ECE, and mean token counts, and `comparison.mp4` re-renders to the same byte size.
+8. Left in place: `results/run-N.json` is still numbered by position in the suite list, so it is not a stable identifier. Each file carries a `model` field, and `model_comparison.json` is the canonical record.

@@ -1,9 +1,8 @@
-import importlib.util
 import unittest
-from pathlib import Path
 
-from benchmark import load_cases
-from jev_like import expected_calibration_error, parse_schema
+from demo.live import transcript
+from jev_like import parse_schema
+from jev_like.benchmark import DEFAULT_DATA, expected_calibration_error, load_cases
 
 
 class CoreTest(unittest.TestCase):
@@ -17,7 +16,7 @@ class CoreTest(unittest.TestCase):
             parse_schema({"x": {"type": "enum", "choices": []}})
 
     def test_benchmark_has_20_valid_cases(self):
-        cases = load_cases("data/benchmark.jsonl")
+        cases = load_cases(DEFAULT_DATA)
         self.assertEqual(len(cases), 20)
         for case in cases:
             schema = parse_schema(case["schema"])
@@ -26,13 +25,10 @@ class CoreTest(unittest.TestCase):
                 self.assertIn(expected, schema[field].choices)
 
     def test_live_transcript_scores_the_parallel_path(self):
-        spec = importlib.util.spec_from_file_location("live", Path(__file__).parent / "demo/live.py")
-        live = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(live)
         case = {"context": "x", "schema": {"urgent": {"type": "boolean"}}, "expected": {"urgent": "true"}}
         auto = {"value": {"urgent": "false"}, "forward_passes": 3, "elapsed_ms": 300.0, "tokens_per_s": 10.0}
         par = {"value": {"urgent": {"value": "true", "score": 0.9}}, "elapsed_ms": 50.0, "tokens_per_s": 100.0}
-        text = "\n".join(line for line, _ in live.transcript("model", case, auto, par))
+        text = "\n".join(line for line, _ in transcript("model", case, auto, par))
         self.assertIn("1/1 fields match expected", text)
         self.assertIn("6.0x faster", text)
 
