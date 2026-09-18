@@ -1,0 +1,30 @@
+[
+  {
+    "mode": "autoregressive",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.2,
+    "schema_validity": 0.3,
+    "mean_ms": 95.96,
+    "p95_ms": 124.18,
+    "ece": 0.8,
+    "model": "mlx-community/gemma-3-270m-it-bf16"
+  },
+  {
+    "mode": "parallel",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.4833,
+    "schema_validity": 1.0,
+    "mean_ms": 12.53,
+    "p95_ms": 12.94,
+    "ece": 0.3563,
+    "model": "mlx-community/gemma-3-270m-it-bf16"
+  },
+  {
+    "mode": "comparison",
+    "model": "mlx-community/gemma-3-270m-it-bf16",
+    "mean_speedup": 7.66,
+    "p95_speedup": 9.6
+  }
+]

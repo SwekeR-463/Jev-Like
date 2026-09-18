@@ -1,0 +1,30 @@
+[
+  {
+    "mode": "autoregressive",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.5333,
+    "schema_validity": 1.0,
+    "mean_ms": 119.18,
+    "p95_ms": 133.1,
+    "ece": 0.4667,
+    "model": "LiquidAI/LFM2.5-VL-450M-MLX-bf16"
+  },
+  {
+    "mode": "parallel",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.5167,
+    "schema_validity": 1.0,
+    "mean_ms": 13.57,
+    "p95_ms": 14.29,
+    "ece": 0.337,
+    "model": "LiquidAI/LFM2.5-VL-450M-MLX-bf16"
+  },
+  {
+    "mode": "comparison",
+    "model": "LiquidAI/LFM2.5-VL-450M-MLX-bf16",
+    "mean_speedup": 8.78,
+    "p95_speedup": 9.31
+  }
+]

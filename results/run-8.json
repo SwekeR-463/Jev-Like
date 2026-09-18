@@ -1,0 +1,34 @@
+[
+  {
+    "mode": "autoregressive",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.7167,
+    "schema_validity": 1.0,
+    "mean_ms": 709.19,
+    "p95_ms": 1085.47,
+    "ece": 0.2833,
+    "mean_tokens": 24.3,
+    "tokens_per_s": 39.9,
+    "model": "mlx-community/Qwen3-1.7B-bf16"
+  },
+  {
+    "mode": "parallel",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.6,
+    "schema_validity": 1.0,
+    "mean_ms": 118.92,
+    "p95_ms": 147.75,
+    "ece": 0.3943,
+    "mean_tokens": 20.8,
+    "tokens_per_s": 498.9,
+    "model": "mlx-community/Qwen3-1.7B-bf16"
+  },
+  {
+    "mode": "comparison",
+    "model": "mlx-community/Qwen3-1.7B-bf16",
+    "mean_speedup": 5.96,
+    "p95_speedup": 7.35
+  }
+]

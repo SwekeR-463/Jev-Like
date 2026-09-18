@@ -1,0 +1,30 @@
+[
+  {
+    "mode": "autoregressive",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.7167,
+    "schema_validity": 1.0,
+    "mean_ms": 368.95,
+    "p95_ms": 438.87,
+    "ece": 0.2833,
+    "model": "mlx-community/Qwen3-1.7B-bf16"
+  },
+  {
+    "mode": "parallel",
+    "cases": 20,
+    "fields": 60,
+    "accuracy": 0.6,
+    "schema_validity": 1.0,
+    "mean_ms": 45.9,
+    "p95_ms": 51.16,
+    "ece": 0.3943,
+    "model": "mlx-community/Qwen3-1.7B-bf16"
+  },
+  {
+    "mode": "comparison",
+    "model": "mlx-community/Qwen3-1.7B-bf16",
+    "mean_speedup": 8.04,
+    "p95_speedup": 8.58
+  }
+]
