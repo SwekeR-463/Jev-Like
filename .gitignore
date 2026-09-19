@@ -2,3 +2,19 @@ __pycache__/
 *.pyc
 .DS_Store
 .venv/
+exp_ideas.md
+
+# third-party benchmark clone; README documents the adapter install step
+jevbench/
+
+# local budget ledger and raw per-decision evidence
+private/
+results/raw_jev_like*/
+results/ledger_v5.jsonl
+
+# superseded and intermediate runs; the _v3 files are the reported ones
+results/jev_like_direct_*_v1.jsonl
+results/jev_like_direct_*_v2.jsonl
+results/jev_like_direct_*_v4.jsonl
+results/jev_like_direct_*_v5.jsonl
+results/jev_like_direct_*.manifest.json

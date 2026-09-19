@@ -1,0 +1,51 @@
+diff --git a/jevbench/adapters/__init__.py b/jevbench/adapters/__init__.py
+index adc7551..01dec02 100644
+--- a/jevbench/adapters/__init__.py
++++ b/jevbench/adapters/__init__.py
+@@ -30,3 +30,8 @@ from .sg_system_one import SgSystemOneAdapter  # noqa: F401
+ def NeedleLocalAdapter(**kw):  # lazy: only the Needle venv can import needle
+     from .needle_local import NeedleLocalAdapter as A
+     return A(**kw)
++
++
++def JevLikeDirectAdapter(**kw):  # lazy: pulls in mlx only when this adapter is used
++    from .jev_like_direct import JevLikeDirectAdapter as A
++    return A(**kw)
+diff --git a/jevbench/cli.py b/jevbench/cli.py
+index 4a7fa93..9f25ed3 100644
+--- a/jevbench/cli.py
++++ b/jevbench/cli.py
+@@ -21,6 +21,7 @@ import sys
+ import time
+ 
+ from .adapters import (GradioSpaceAdapter, LocalOpenJevAdapter, NeedleLocalAdapter,
++                       JevLikeDirectAdapter,
+                        OpenAICompatAdapter, SystemOneListAdapter,
+                        RemoteInprocAdapter, SemIfDirectAdapter, SgSystemOneAdapter, So1DeciderAdapter,
+                        TypeSafeAdapter)
+@@ -55,6 +56,7 @@ def cmd_run(args) -> int:
+ 
+     kinds = {"typesafe": TypeSafeAdapter, "systemone_list": SystemOneListAdapter,
+              "gradio_space": GradioSpaceAdapter, "local_openjev": LocalOpenJevAdapter,
++             "jev_like_direct": JevLikeDirectAdapter,
+              "openai_compat": OpenAICompatAdapter,
+              "needle_local": NeedleLocalAdapter,
+              "semif_direct": SemIfDirectAdapter, "so1_decider": So1DeciderAdapter,
+@@ -68,7 +70,7 @@ def cmd_run(args) -> int:
+                   price_output_per_m=args.price_out_per_m)
+     if args.adapter == "openai_compat":
+         kwargs["model"] = args.model or ""
+-    if args.adapter in ("local_openjev", "semif_direct", "so1_decider", "sg_system_one"):
++    if args.adapter in ("local_openjev", "semif_direct", "so1_decider", "sg_system_one", "jev_like_direct"):
+         kwargs["revision"] = args.revision
+     adapter = kinds[args.adapter](**kwargs)
+     if args.cost_basis:
+@@ -156,7 +158,7 @@ def main(argv=None) -> int:
+                        choices=["typesafe", "systemone_list", "gradio_space",
+                                 "local_openjev", "openai_compat", "needle_local",
+                                 "semif_direct", "so1_decider", "remote_inproc",
+-                                "sg_system_one"])
++                                "sg_system_one", "jev_like_direct"])
+     p_run.add_argument("--endpoint", default=None)
+     p_run.add_argument("--model", default=None)
+     p_run.add_argument("--key-env", dest="key_env",
