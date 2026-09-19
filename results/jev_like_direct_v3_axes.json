@@ -1,0 +1,23 @@
+{
+  "tiers": {
+    "easy": 1.0,
+    "standard": 0.75,
+    "hard": 0.5045045045045045
+  },
+  "ece_hard": 0.09826,
+  "mean_tvd": 0.28777615145623686,
+  "probability_fidelity": 71.22238485437632,
+  "calibration": 75.78519242718815,
+  "speed_pooled": 78.30744138366936,
+  "p50": 0.16100933399866335,
+  "p95": 1.489107832996524,
+  "intelligence": 69.63213213213214,
+  "mean_input_tokens": 777.7213114754098,
+  "cost_zero_axes": {
+    "intelligence": 69.63213213213214,
+    "calibration": 75.78519242718815,
+    "speed": 78.30744138366936,
+    "cost": 100.0
+  },
+  "score_cost_zero": 80.17690200106092
+}

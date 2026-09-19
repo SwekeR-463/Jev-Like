@@ -1,4 +1,4 @@
-# Jev-Like Levels 0–2
+# Jev-Like 
 
 A minimal experiment reproducing the public core of Harsha Gundala's approach:
 
@@ -18,6 +18,7 @@ demo/
   video.py       shared palette, fonts, and the FFmpeg writer
   render.py      the comparison animation
   live.py        a real single-case run, printed and optionally replayed
+bench/           the JevBench adapter, plus the patch that registers it
 tests/           model-free unit tests
 data/            the labeled decision cases
 results/         measured runs, one JSON file per checkpoint
@@ -27,14 +28,44 @@ Inference and evaluation are deliberately separate: `runtime.py` returns measure
 
 ## Demo
 
-[Live single-case demo](demo/live.mp4) — one real ticket run through both paths on Qwen3.5-2B BF16, the strongest checkpoint measured here. The parallel readout scores 3/3 against the autoregressive path's 2/3, at roughly 6x lower latency. The numbers and the JSON come from an actual run; only the replay pacing is artificial.
+<video src="demo/live.mp4" controls muted loop playsinline width="100%"></video>
+
+One real ticket through both paths on Qwen3.5-2B BF16 — parallel 3/3, autoregressive 2/3, roughly 6x lower latency. Real run; only the replay pacing is artificial. An earlier [side-by-side comparison](demo/comparison.mp4) uses deliberately slowed pacing.
+
+## JevBench v1.2
+
+Alongside the 20 hand-labeled cases in this repository, the Level 2 readout also runs on [JevBench](https://github.com/fstandhartinger/jevbench), an independent published benchmark of Jev-shaped decision systems.
+
+![Jev-Like against the JevBench v1.2 field](results/charts/jev_like_vs_field.png)
+
+`jev_like_direct` plugs the readout into their CLI as an in-process adapter: one prefill over state + question + options, then one suffix pass that scores the allowed option tokens. No network, no generated text, and the returned distribution is the model's own softmax rather than a verbalized one. The prompt lists the exact option ids that get scored, which is load-bearing — scoring letter tokens the model was never shown reads out at chance with no error.
+
+231 public decisions, no held-out items, zero failures, every distribution strictly valid:
+
+| Tier | n | Accuracy | Brier | ECE | p50 |
+|---|---:|---:|---:|---:|---:|
+| easy | 48 | 100.0% | 0.008 | 0.053 | 89 ms |
+| standard | 72 | 75.0% | 0.314 | 0.083 | 93 ms |
+| hard | 111 | 50.5% | 0.625 | 0.098 | 372 ms |
+
+On those same 231 public items that puts a 2B local model above the Qwen3-8B, Gemma E2B, and DeBERTa entries on the hard tier, and mid-pack overall.
+
+Two things this is not. It is not a JevBench Score: that is a geometric mean of four axes and the cost axis is unmeasured here (local weights, no provider tariff), so it is left out rather than scored as free. And it is not comparable to the published tier accuracies, which include held-out items.
+
+JevBench itself is not vendored — clone it and install the adapter, which lives in [bench/](bench/jev_like_direct.py). The patch only registers it with their CLI.
 
 ```bash
-uv run --python 3.12 python -m demo.live          # real run, prints the transcript
-uv run --python 3.12 python -m demo.live --video  # also writes demo/live.mp4
-```
+git clone https://github.com/fstandhartinger/jevbench
+git -C jevbench checkout 27ed3d6c5789264ad06f16008e3a0f033af123a9   # revision measured here
+cp bench/jev_like_direct.py jevbench/jevbench/adapters/
+git -C jevbench apply "$PWD/bench/register-adapter.patch"
 
-An earlier [side-by-side comparison animation](demo/comparison.mp4) illustrates the same idea against Qwen3-1.7B BF16 with deliberately slowed pacing. Re-render it with `sh demo/render.sh`.
+JEVBENCH_WARM_LOAD=1 PYTHONPATH="$PWD/jevbench" uv run --python 3.12 python -m jevbench.cli run \
+  --tasks jevbench/datasets/public/original.jsonl \
+  --adapter jev_like_direct --endpoint Qwen/Qwen3.5-2B \
+  --results results/jev_like_direct_original.jsonl --raw-dir results/raw_jev_like
+uv run --with matplotlib --python 3.12 python results/make_chart.py
+```
 
 ## Run
 
@@ -43,6 +74,8 @@ uv run --python 3.12 python -m unittest discover -s tests -t .
 uv run --python 3.12 python -m jev_like.benchmark --mode parallel
 uv run --python 3.12 python -m jev_like.benchmark --mode both --model Qwen/Qwen3.5-2B
 uv run --python 3.12 python -m jev_like.benchmark --all
+uv run --python 3.12 python -m demo.live          # real run, prints the transcript
+uv run --python 3.12 python -m demo.live --video  # also writes demo/live.mp4
 ```
 
 `--all` runs every checkpoint in `jev_like.benchmark.MODELS` in its own process, so models never stack in memory, and writes [the full JSON results](results/model_comparison.json) plus [a Markdown comparison](results/model_comparison.md). Each mode gets an unmeasured warm-up inference before its 20 measured cases.
@@ -86,3 +119,4 @@ This repository is an independent experimental implementation. “Jev” and “
 - [Harsha Gundala — Qwen-2.5-1B-RLCD repository](https://huggingface.co/harshatheg/Qwen-2.5-1B-RLCD): public MLX implementation reviewed while building this repository.
 - [OpenJev](https://openjev.com/): browser-only direct-logprob versus autoregressive-generation comparison that clearly distinguishes constrained-choice scores from calibrated probabilities.
 - [Alex Wortega — trained OpenJev NLI cross-encoder](https://huggingface.co/AlexWortega/openjev): Qwen3.5-4B sequence-classification checkpoint trained to score premise–hypothesis pairs as contradiction, entailment, or neutral; a distinct trained semantic-decision method supporting reranking and grading.
+- [fstandhartinger — jevbench](https://github.com/fstandhartinger/jevbench): independent public benchmark of Jev-shaped decision systems — 534 decisions across easy, standard, judge, and hard tiers, scored on intelligence, calibration, speed, and cost. Its v1.2 datasets, published results, and scoring code are what the JevBench section above is measured against.
