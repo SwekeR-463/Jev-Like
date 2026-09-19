@@ -319,3 +319,36 @@ The parallel path was `14.05×` faster by mean and `14.45×` by p95, but lost `1
 4. Replaced the README results table. It had drifted badly: it still named 4-bit and 8-bit checkpoints (Qwen2.5 1.5B 4-bit, Qwen3 1.7B 4-bit, Qwen3 0.6B 8-bit, LFM2.5-VL 1.6B 4-bit) with numbers matching no run file in the repository. It now carries the generated BF16 table.
 5. Llama 3.2 1B autoregressive accuracy moved from 60.0% to 58.3%, one field out of sixty. Greedy decoding is deterministic per run, so this is a near-tie in the logits resolved differently, not a code change; the fresh run is the recorded one.
 6. Promoted `demo/live.mp4` to the headline demo in the README, replacing the Qwen3-1.7B comparison animation in that role. The animation is still documented, but second.
+
+## 2026-09-19 — GLiNER2.5 schema-native method review
+
+1. Reviewed `fastino/gliner2.5-base-v1`, a 194M DeBERTa-v3 encoder supporting runtime classification schemas, extraction, records, relations, probabilities, and constrained cross-field decoding.
+2. Added it to `JEV_REPLICATION_PLAN.md` as Level 3, ahead of the larger OpenJev NLI and DiffusionGemma experiments.
+3. Defined a direct mapping from the existing Boolean/enum benchmark schemas and required accuracy, latency, feasibility, calibration, and memory measurements.
+4. Renumbered the later implementation levels and decision gates consistently.
+
+## 2026-09-19 — JevBench v1.2 benchmark
+
+1. Cloned [`fstandhartinger/jevbench`](https://github.com/fstandhartinger/jevbench) at `27ed3d6` and read its canonical task records, scoring, runner, and adapter interfaces before writing any code.
+2. Confirmed the interface fit first: JevBench scores a native probability distribution over the exact label set, which is precisely what the Level 2 shared-prefill readout already produces. Nothing is generated, so the distribution is the model's own softmax rather than a verbalized one. This is the first external benchmark the readout has been pointed at.
+3. Added a `jev_like_direct` in-process adapter: one prefill over state + question + options, then one suffix pass that scores the allowed option tokens. A first probe on `original-policy-01-0` returned `no 0.77 / yes 0.23` against gold `no`.
+4. First failure was silent. The adapter encoded the context as raw text, but `runtime._chat_prompt` applies the model's chat template and appends `/no_think` for Qwen3. Without it the answer slot sits out of distribution and the softmax collapses to exactly `0.5 / 0.5` on every item — still a valid distribution, so it still scored. Isolated by scoring one case four ways: raw with `no`/`yes` tokens gave `0.5 / 0.5`, the chat-templated prompt gave `0.89 / 0.11`.
+5. Second failure was also silent and much larger. For `choice` questions the labels are the criteria keys (`track_order`, `billing_question`), which are multi-token, so `runtime._readout` fell back to letter ids (`" A"`, `" B"`, …). The adapter scored those letter tokens while the prompt only ever named the full option strings. Easy-tier choice accuracy was `0.306`, which is chance. Fixed by rendering the options as a lettered list carrying their rubric text and scoring exactly the ids the prompt lists.
+6. `noul` is order-sensitive, and the bench documents this. Across the 74 public `noul` items yes-first scored 48/74 and no-first 41/74. Yes-first was chosen because it is the canonical order the bench's own `yes_no()` helper builds and its footnote treats a reversed-order run as an adapter bug rather than a result. Recorded here explicitly as the one choice that was informed by looking at the test set.
+7. Ran all three public splits. 231 decisions, 0 failures, coverage 1.0, 0 renormalized distributions, every answer strictly valid:
+
+| Tier | n | Accuracy | Brier | ECE | p50 |
+|---|---:|---:|---:|---:|---:|
+| easy | 48 | 100.0% | 0.008 | 0.053 | 89 ms |
+| standard | 72 | 75.0% | 0.314 | 0.083 | 93 ms |
+| hard | 111 | 50.5% | 0.625 | 0.098 | 372 ms |
+
+8. By question type across all 231: `choice` 98/139, `noul` 49/74, `score` 11/18.
+9. Re-scored every published system on the identical 231 public items rather than comparing against their published tiers, which include held-out items. On hard, 50.5% is ahead of system-one (Qwen3-8B) at 48.6%, system-one-open (Gemma 4 E2B) at 48.6%, Qwen3.8 27B at 42.3%, and open-jev-deberta-v3-large at 37.8%, and behind SemIf (Qwen3.5-4B) at 61.3%.
+10. Computed the three axes this run can support, using the bench's own `composite_v12`. Intelligence 69.6, with the judge tier absent so its weight renormalises over easy/standard/hard. Calibration 75.8, from ECE 0.098 and probability fidelity 71.2 across the 10 public `probability` items against `provenance.gold_probs`. Speed 78.3, from a pooled standard+hard p50 of 0.161 s adjusted to 0.472 s by the bench's ×2 plus 0.15 s own-server rule.
+11. Did not compute a JevBench Score. It is the geometric mean of four axes and the cost axis has no measurement here: the adapter reports local weights and no provider tariff. Their `cost()` raises rather than scoring a missing price, because a missing price would otherwise read as a free 100. For completeness, forcing cost to 0 yields 80.2 and first place, but every other self-hosted row carries an estimated hosted tariff; applying zero cost consistently across that cohort puts Jev-Like 5th of 9. The published headline is therefore the three measured axes, not a composite.
+12. Added `results/charts/jev_like_vs_field.png` and its generator `results/make_chart.py`. The chart prints its own caveats on the image so the numbers cannot be lifted out of context.
+13. Vendored the adapter at `bench/jev_like_direct.py`. The jevbench clone itself is pinned but not vendored, and its four one-line registration edits are captured as `bench/register-adapter.patch`. The adapter's import was made absolute so the same file works both vendored and installed into the clone.
+14. Added `tests/test_jevbench_adapter.py` covering the letter-fallback branch and the label order, because both defects produced valid-looking output rather than errors and neither would have been caught by a smoke test.
+15. Superseded runs are kept as `_v1` (both defects present, standard 0.403) and `_v2` (chat template fixed, choice framing still wrong, standard 0.722). `_v3` is the reported run. `_v4` is partial — the shared budget ledger hit its $15 cap at 57/72 — and `_v5` reproduces `_v3` exactly at 0.750, which it must, since the readout reads logits and never samples. There is no seed-selection room.
+16. Stopped tracking `exp_ideas.md`, which had been committed in error.

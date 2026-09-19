@@ -9,11 +9,12 @@ Build incrementally and stop at the first level that meets the required accuracy
 | 0 | Benchmark harness | 0.5 day | Any | Honest baseline |
 | 1 | Autoregressive structured output | 0.5–1 day | Local or CUDA | Functional typed API |
 | 2 | Qwen logit slicing | 1–2 days | Local GPU or CUDA | Fast, simple prototype |
-| 3 | Trained NLI cross-encoder | 1–3 days | Apple Silicon or CUDA | General semantic decision model |
-| 4 | DiffusionGemma fixed canvas | 2–4 days | NVIDIA GPU | Closest open Jev architecture |
-| 5 | Calibration and adaptive sampling | 3–7 days | Same GPU as inference | Trustworthy uncertainty |
-| 6 | Fine-tuning or distillation | 2–6 weeks | Strong CUDA GPU | Task-specific production model |
-| 7 | Custom System-One model | 2–6+ months | GPU cluster | Research project |
+| 3 | GLiNER2.5 schema-native baseline | 1–2 days | Apple Silicon, CPU, or CUDA | Ready-made typed decision model |
+| 4 | Trained NLI cross-encoder | 1–3 days | Apple Silicon or CUDA | General semantic decision model |
+| 5 | DiffusionGemma fixed canvas | 2–4 days | NVIDIA GPU | Closest open Jev architecture |
+| 6 | Calibration and adaptive sampling | 3–7 days | Same GPU as inference | Trustworthy uncertainty |
+| 7 | Fine-tuning or distillation | 2–6 weeks | Strong CUDA GPU | Task-specific production model |
+| 8 | Custom System-One model | 2–6+ months | GPU cluster | Research project |
 
 ## Level 0 — Define the Benchmark
 
@@ -83,7 +84,43 @@ Targets:
 
 **Limitation:** Outputs are parallel at the batch level, but each question still has its own suffix computation.
 
-## Level 3 — Trained NLI Cross-Encoder
+## Level 3 — GLiNER2.5 Schema-Native Baseline
+
+Evaluate [`fastino/gliner2.5-base-v1`](https://huggingface.co/fastino/gliner2.5-base-v1) before training a custom model. It is a 194M-parameter DeBERTa-v3 encoder with runtime schemas for classification, entity and relation extraction, structured records, and constrained cross-field decisions.
+
+Map the existing benchmark directly:
+
+```text
+urgent     → single choice [true, false]
+department → single choice [billing, infrastructure, support]
+sentiment  → single choice [calm, concerned, angry]
+```
+
+Steps:
+
+1. Add a PyTorch/MPS `gliner25` benchmark mode using `AutoExtractor` or `Classifier`.
+2. Convert Boolean and enum fields into `ClassificationSchema.single` tasks.
+3. Add cross-field constraints only where the domain provides a real invariant.
+4. Run the same 20 cases and measure accuracy, schema validity, constraint feasibility, mean/p95 latency, throughput, peak memory, ECE, and Brier score.
+5. Test combined classification, extraction, relations, and records on richer workflow examples.
+
+Advantages:
+
+- Schema-native typed output instead of generated JSON.
+- Multiple runtime-defined decision fields and allowed values.
+- Exact or beam decoding under cross-field constraints.
+- Probabilities for every permitted value.
+- Local CPU, CUDA, and Apple MPS support in a small checkpoint.
+
+Limitations:
+
+- Its `confidence` values are not proven to be calibrated probabilities.
+- A 194M encoder may lack the reasoning ability required by ambiguous workflows.
+- Classification, extraction, and relation benchmarks do not establish Jev-level workflow intelligence.
+
+**Exit condition:** It beats or complements Level 2 on the accuracy/latency frontier while remaining schema-valid and calibratable.
+
+## Level 4 — Trained NLI Cross-Encoder
 
 Evaluate [Alex Wortega's OpenJev checkpoint](https://huggingface.co/AlexWortega/openjev), a Qwen3.5-4B cross-encoder trained for three-way natural-language inference:
 
@@ -110,7 +147,7 @@ Steps:
 2. Generate explicit hypotheses from every field description and allowed value.
 3. Score all candidates in one batch.
 4. Normalize entailment scores within each field.
-5. Benchmark accuracy, validity, latency, throughput, ECE, and Brier score against Levels 1 and 2.
+5. Benchmark accuracy, validity, latency, throughput, ECE, and Brier score against Levels 1–3.
 6. Test a hybrid optimization that reuses shared context computation across candidate hypotheses if the architecture permits it.
 
 Advantages:
@@ -126,9 +163,9 @@ Limitations:
 - The 4B BF16 checkpoint is larger than the current 270M–1.7B comparison models.
 - Entailment scores still require held-out calibration before being treated as confidence.
 
-**Exit condition:** It materially improves accuracy or calibration over Level 2 at an acceptable latency and memory cost.
+**Exit condition:** It materially improves accuracy or calibration over Levels 2–3 at an acceptable latency and memory cost.
 
-## Level 4 — DiffusionGemma Fixed Canvas
+## Level 5 — DiffusionGemma Fixed Canvas
 
 This is the closest public Jev-like implementation:
 
@@ -160,7 +197,7 @@ Targets:
 
 **Initial constraint:** Use single-token internal labels such as `A`, `B`, and `C`, then map them to human-readable values after inference.
 
-## Level 5 — Real Uncertainty Handling
+## Level 6 — Real Uncertainty Handling
 
 Raw softmax and entropy are not reliable confidence measures.
 
@@ -183,9 +220,9 @@ confidence ≥ 0.90 → automate
 
 **Exit condition:** Predictions reporting roughly 90% confidence are correct approximately 90% of the time on unseen data.
 
-## Level 6 — Fine-Tune for the Workload
+## Level 7 — Fine-Tune for the Workload
 
-Only begin training if Levels 2–5 prove useful but accuracy remains insufficient.
+Only begin training if Levels 2–6 prove useful but accuracy remains insufficient.
 
 Training data should include:
 
@@ -244,7 +281,7 @@ This approach avoids spending training capacity on braces, field names, explanat
 
 **Exit condition:** A meaningful accuracy or calibration improvement over the untrained model on a locked test set.
 
-## Level 7 — Custom System-One Model
+## Level 8 — Custom System-One Model
 
 This level requires:
 
@@ -259,9 +296,9 @@ This is startup or research-lab scope, not an initial implementation step.
 
 ## Recommended Route
 
-Build **Levels 0 → 2 → 3 → 5** first. Levels 0–2 already run locally; Level 3 adds a trained semantic-decision baseline, and Level 5 calibrates whichever method performs best.
+Build **Levels 0 → 2 → 3 → 4 → 6** first. Levels 0–2 already run locally; Level 3 adds the smallest schema-native baseline, Level 4 adds a stronger semantic-decision baseline, and Level 6 calibrates whichever method performs best.
 
-Add **Level 4** when NVIDIA hardware is available and architectural similarity to Jev matters. Attempt Level 6 only when benchmark results demonstrate a specific accuracy or calibration gap. Skip Level 7 unless inference economics justify maintaining a new model architecture.
+Add **Level 5** when NVIDIA hardware is available and architectural similarity to Jev matters. Attempt Level 7 only when benchmark results demonstrate a specific accuracy or calibration gap. Skip Level 8 unless inference economics justify maintaining a new model architecture.
 
 ## Decision Gates
 
@@ -270,7 +307,8 @@ Add **Level 4** when NVIDIA hardware is available and architectural similarity t
 | 0 | The dataset represents the real workload. |
 | 1 | Model accuracy is useful enough to optimize. |
 | 2 | Latency or cost still prevents deployment. |
-| 3 | Trained entailment materially improves the quality/speed tradeoff. |
-| 4 | Parallel diffusion materially beats Levels 2 and 3. |
-| 5 | Calibrated automation provides measurable value. |
-| 6 | A custom architecture has a demonstrated economic advantage. |
+| 3 | GLiNER2.5 materially improves or complements Level 2. |
+| 4 | Trained entailment materially improves the quality/speed tradeoff. |
+| 5 | Parallel diffusion materially beats Levels 2–4. |
+| 6 | Calibrated automation provides measurable value. |
+| 7 | A custom architecture has a demonstrated economic advantage. |
