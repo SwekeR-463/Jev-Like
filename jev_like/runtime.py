@@ -10,9 +10,12 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-import mlx.core as mx
-from mlx_lm import load
-from mlx_lm.models.cache import make_prompt_cache
+mx = None
+_import_error = None
+try:
+    import mlx.core as mx
+except ImportError as error:  # Linux wheels ship the GPU backend as an extra, or the driver is broken
+    _import_error = error
 
 DEFAULT_MODEL_ID = os.getenv("MODEL_ID", "mlx-community/Qwen2.5-1.5B-Instruct-4bit")
 
@@ -35,12 +38,35 @@ def parse_schema(raw: dict[str, Any]) -> dict[str, Field]:
     return schema
 
 
+_BACKEND_HINT = (
+    "MLX found no working GPU backend. On Linux with an NVIDIA GPU install one with "
+    '`uv pip install "mlx[cuda12]"`; if nvidia-smi reports a driver/library version '
+    "mismatch, reboot so the freshly installed driver loads."
+)
+
+
+def detect_backend() -> str:
+    """Report which GPU backend MLX will use: 'cuda', 'metal', or 'cpu'."""
+    if mx is None:
+        raise ImportError(_BACKEND_HINT) from _import_error
+    if hasattr(mx, "cuda") and mx.cuda.is_available():
+        return "cuda"
+    if hasattr(mx, "metal") and mx.metal.is_available():
+        return "metal"
+    return "cpu"
+
+
 def get_engine(model_id: str = DEFAULT_MODEL_ID):
     """Load and cache one engine per model, so a process can switch models safely."""
+    backend = detect_backend()
     if model_id not in _engines:
         started = time.perf_counter()
-        print(f"Loading {model_id}…")
+        print(f"Loading {model_id} on {backend}…")
+        if backend == "cpu":
+            print("warning: no GPU backend; MLX will run the model on the CPU")
         try:
+            from mlx_lm import load
+
             model, tokenizer = load(model_id)
         except ValueError as error:
             if "not supported" not in str(error):
@@ -60,6 +86,8 @@ def get_engine(model_id: str = DEFAULT_MODEL_ID):
 
 
 def _make_cache(model):
+    from mlx_lm.models.cache import make_prompt_cache
+
     return model.make_cache() if hasattr(model, "make_cache") else make_prompt_cache(model)
 
 

@@ -2,8 +2,12 @@ version = 1
 revision = 3
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
-    "python_full_version >= '3.12'",
-    "python_full_version < '3.12'",
+    "python_full_version >= '3.12' and sys_platform == 'darwin'",
+    "python_full_version >= '3.12' and sys_platform == 'linux'",
+    "python_full_version >= '3.12' and sys_platform != 'darwin' and sys_platform != 'linux'",
+    "python_full_version < '3.12' and sys_platform == 'darwin'",
+    "python_full_version < '3.12' and sys_platform == 'linux'",
+    "python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux'",
 ]
 
 [[package]]
@@ -313,14 +317,16 @@ name = "jev-like"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "mlx" },
+    { name = "mlx", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
+    { name = "mlx", extra = ["cuda12"], marker = "sys_platform == 'linux'" },
     { name = "mlx-lm" },
     { name = "mlx-vlm" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "mlx", specifier = ">=0.22" },
+    { name = "mlx", marker = "sys_platform == 'darwin'", specifier = ">=0.22" },
+    { name = "mlx", extras = ["cuda12"], marker = "sys_platform == 'linux'", specifier = ">=0.32" },
     { name = "mlx-lm", specifier = ">=0.21" },
     { name = "mlx-vlm", specifier = ">=0.3.10" },
 ]
@@ -494,6 +500,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9a/f8/291c026e2eea82cdcfc86ed71da6757ab82e419b3aa30603da4bd2be93b9/mlx-0.32.2-cp313-cp313t-win_arm64.whl", hash = "sha256:c7670ffb854c11e6776349a3797fa076d1a2a00290ebe2e9cfed8b60ca4a5db0", size = 625676, upload-time = "2026-08-25T10:32:16.982Z" },
 ]
 
+[package.optional-dependencies]
+cuda12 = [
+    { name = "mlx-cuda-12", marker = "sys_platform == 'linux'" },
+]
+
 [[package]]
 name = "mlx-audio"
 version = "0.5.4"
@@ -513,6 +524,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b0/71/07fc039c603d8fb6531a2eca75b18b150c4ee9f3780c03ba20538a576f32/mlx_audio-0.5.4.tar.gz", hash = "sha256:3e1895860d9a636360a9377b5651239f5197e649d56fe25f1382cac6f2ed1e55", size = 1725509, upload-time = "2026-09-14T15:26:06.632Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/99/08dbae6b2e7771b3f9cf55c8c160d104f8c41c6c71dffebe785ed1344248/mlx_audio-0.5.4-py3-none-any.whl", hash = "sha256:d350ecc43a65b94b1578381370be64229948f79aef9ff599d20adb65e38351b3", size = 2077152, upload-time = "2026-09-14T15:26:04.598Z" },
+]
+
+[[package]]
+name = "mlx-cuda-12"
+version = "0.32.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nvidia-cublas-cu12", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cuda-nvrtc-cu12", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cudnn-cu12", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cufft-cu12", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-nccl-cu12", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/b4/30454871715c054fb2104d94bc73a8b85679fe30f96e8513910db5dbaca9/mlx_cuda_12-0.32.2-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:c794c697dcd28e00a51ce8813189ece1a8c62559de7cc5e27803cc591f55df05", size = 84674347, upload-time = "2026-08-25T10:31:12.712Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/0f/9361e03d4ba4508d948724b4c8d62f31385fe1ce26cff4000211a82a14da/mlx_cuda_12-0.32.2-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:35445ead9724855826f310b9085d57137d0a2c5381cc293cb6d86b03bb4feadf", size = 87046209, upload-time = "2026-08-25T10:31:17.464Z" },
 ]
 
 [[package]]
@@ -578,7 +605,9 @@ name = "numpy"
 version = "2.4.6"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version < '3.12'",
+    "python_full_version < '3.12' and sys_platform == 'darwin'",
+    "python_full_version < '3.12' and sys_platform == 'linux'",
+    "python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d0/ad/fed0499ce6a338d2a03ebae59cd15093910c8875328855781952abf6c2fe/numpy-2.4.6.tar.gz", hash = "sha256:f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda", size = 20735807, upload-time = "2026-05-18T23:37:14.07Z" }
 wheels = [
@@ -639,7 +668,9 @@ name = "numpy"
 version = "2.5.3"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.12'",
+    "python_full_version >= '3.12' and sys_platform == 'darwin'",
+    "python_full_version >= '3.12' and sys_platform == 'linux'",
+    "python_full_version >= '3.12' and sys_platform != 'darwin' and sys_platform != 'linux'",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/13/01/11703282db468b85f6f7b8c7f22d058de5970d5c7e60a3a8aaa313c3de36/numpy-2.5.3.tar.gz", hash = "sha256:df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563", size = 20791231, upload-time = "2026-09-06T16:27:47.073Z" }
 wheels = [
@@ -665,6 +696,69 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/41/ee/38e785e88a4045f6ad1d1f2808dcdfafdca48c760260c0587bf171e29fc9/numpy-2.5.3-cp313-cp313-win32.whl", hash = "sha256:1c80eabb4035ecf4ca9cd49cde8a9fdd69a729e63e6474887d1523ade7aa277f", size = 6129003, upload-time = "2026-09-06T16:25:23.664Z" },
     { url = "https://files.pythonhosted.org/packages/f3/ec/100f2b1794ede74a9b3d7ec6b9736927f56713414c1dfe19ab6c383494bf/numpy-2.5.3-cp313-cp313-win_amd64.whl", hash = "sha256:71cad2b2a7451ab79d8f5e71b453485b6775963d5cf794179144a7463fe6e8ec", size = 12560965, upload-time = "2026-09-06T16:25:26.602Z" },
     { url = "https://files.pythonhosted.org/packages/80/b1/7dc825ca94c12acebbce4c37caa5e198695eb31424bc579679f32b1bb49d/numpy-2.5.3-cp313-cp313-win_arm64.whl", hash = "sha256:8e4dd766076855b5ff7ea52fa5f07ce26286726e0f8bff446b7739d02e6ea204", size = 10482343, upload-time = "2026-09-06T16:25:29.772Z" },
+]
+
+[[package]]
+name = "nvidia-cublas-cu12"
+version = "12.9.2.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nvidia-cuda-nvrtc-cu12", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f7/a2/c96163a0fff1839c0c9548bbdeae7b853b867009e33b9b9264adc238b1cf/nvidia_cublas_cu12-12.9.2.10-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:5572131a59c3eebeeb1c4c8144f772d49372c20124916e072a0e3fc30df421d5", size = 575012079, upload-time = "2026-04-08T18:51:47.303Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/c0/0a517bfe63ccd3b92eb254d264e28fca3c7cab75d07daea315250fb1bf73/nvidia_cublas_cu12-12.9.2.10-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:e4f53a8ca8c5d6e8c492d0d0a3d565ecb59a751b19cfdaa4f6da0ab2104c1702", size = 581240110, upload-time = "2026-04-08T18:52:31.532Z" },
+]
+
+[[package]]
+name = "nvidia-cuda-nvrtc-cu12"
+version = "12.9.86"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/85/e4af82cc9202023862090bfca4ea827d533329e925c758f0cde964cb54b7/nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:210cf05005a447e29214e9ce50851e83fc5f4358df8b453155d5e1918094dcb4", size = 89568129, upload-time = "2025-06-05T20:02:41.973Z" },
+    { url = "https://files.pythonhosted.org/packages/64/eb/c2295044b8f3b3b08860e2f6a912b702fc92568a167259df5dddb78f325e/nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:096d4de6bda726415dfaf3198d4f5c522b8e70139c97feef5cd2ca6d4cd9cead", size = 44528905, upload-time = "2025-06-05T20:02:29.754Z" },
+]
+
+[[package]]
+name = "nvidia-cudnn-cu12"
+version = "9.26.0.51"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nvidia-cublas-cu12", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f1/ae/412ef5533642e63f360db552235337d28c00ddc1dfca807a6ddae95e939c/nvidia_cudnn_cu12-9.26.0.51-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:24458a34856d6b5e83aa9b7041e92a789f0ef390f4d881529fb986df6aecca60", size = 776301552, upload-time = "2026-09-10T16:44:35.71Z" },
+    { url = "https://files.pythonhosted.org/packages/18/d2/ac670e921b185ba348a7ba7dd490ef2aad9c3e1918a87553567be86e37f3/nvidia_cudnn_cu12-9.26.0.51-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:ce8603d4ea88d134be5a92c5e0833d513bea1ce0ee4bbc5d649fcb8718d51cbf", size = 770488318, upload-time = "2026-09-10T16:47:14.978Z" },
+]
+
+[[package]]
+name = "nvidia-cufft-cu12"
+version = "11.4.1.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nvidia-nvjitlink-cu12", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9b/2b/76445b0af890da61b501fde30650a1a4bd910607261b209cccb5235d3daa/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:1a28c9b12260a1aa7a8fd12f5ebd82d027963d635ba82ff39a1acfa7c4c0fbcf", size = 200822453, upload-time = "2025-06-05T20:05:27.889Z" },
+    { url = "https://files.pythonhosted.org/packages/95/f4/61e6996dd20481ee834f57a8e9dca28b1869366a135e0d42e2aa8493bdd4/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:c67884f2a7d276b4b80eb56a79322a95df592ae5e765cf1243693365ccab4e28", size = 200877592, upload-time = "2025-06-05T20:05:45.862Z" },
+]
+
+[[package]]
+name = "nvidia-nccl-cu12"
+version = "2.32.3"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/cb/702524922e4f64e42e8c299a26c7d794bce50dee2f5f54758f4d1e162305/nvidia_nccl_cu12-2.32.3-py3-none-manylinux_2_27_aarch64.whl", hash = "sha256:061af42ae1044816820e16b872075e243d1ac0656f51860fbc8e106c257aa83a", size = 351519937, upload-time = "2026-09-22T08:31:48.829Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/f8/9dce3698eed6fae28078eb38f748feb1665767693d8017c099de9fbf0b08/nvidia_nccl_cu12-2.32.3-py3-none-manylinux_2_27_x86_64.whl", hash = "sha256:bb94b2348e4861d5e8aa00b36c3d12d9bdf9c6369b82cbb723de0b582280a21c", size = 351526311, upload-time = "2026-09-22T08:32:27.013Z" },
+]
+
+[[package]]
+name = "nvidia-nvjitlink-cu12"
+version = "12.9.86"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/46/0c/c75bbfb967457a0b7670b8ad267bfc4fffdf341c074e0a80db06c24ccfd4/nvidia_nvjitlink_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl", hash = "sha256:e3f1171dbdc83c5932a45f0f4c99180a70de9bd2718c1ab77d14104f6d7147f9", size = 39748338, upload-time = "2025-06-05T20:10:25.613Z" },
+    { url = "https://files.pythonhosted.org/packages/97/bc/2dcba8e70cf3115b400fef54f213bcd6715a3195eba000f8330f11e40c45/nvidia_nvjitlink_cu12-12.9.86-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:994a05ef08ef4b0b299829cde613a424382aff7efb08a7172c1fa616cc3af2ca", size = 39514880, upload-time = "2025-06-05T20:10:04.89Z" },
 ]
 
 [[package]]
@@ -1018,7 +1112,9 @@ name = "scipy"
 version = "1.17.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version < '3.12'",
+    "python_full_version < '3.12' and sys_platform == 'darwin'",
+    "python_full_version < '3.12' and sys_platform == 'linux'",
+    "python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'linux'",
 ]
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -1072,7 +1168,9 @@ name = "scipy"
 version = "1.18.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.12'",
+    "python_full_version >= '3.12' and sys_platform == 'darwin'",
+    "python_full_version >= '3.12' and sys_platform == 'linux'",
+    "python_full_version >= '3.12' and sys_platform != 'darwin' and sys_platform != 'linux'",
 ]
 dependencies = [
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },

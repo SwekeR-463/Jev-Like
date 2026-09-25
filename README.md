@@ -38,7 +38,10 @@ An earlier [side-by-side comparison animation](demo/comparison.mp4) illustrates 
 
 ## Run
 
+`uv sync` picks the right MLX wheel for the machine: Metal on macOS, the CUDA 12 backend on Linux with an NVIDIA GPU (plain `mlx` ships no Linux backend). Startup reports the detected backend — `cuda`, `metal`, or `cpu` — and fails with install instructions when none is usable. macOS and Linux only; MLX has no Windows build.
+
 ```bash
+uv sync --python 3.12
 uv run --python 3.12 python -m unittest discover -s tests -t .
 uv run --python 3.12 python -m jev_like.benchmark --mode parallel
 uv run --python 3.12 python -m jev_like.benchmark --mode both --model Qwen/Qwen3.5-2B
