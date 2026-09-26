@@ -39,9 +39,10 @@ def parse_schema(raw: dict[str, Any]) -> dict[str, Field]:
 
 
 _BACKEND_HINT = (
-    "MLX found no working GPU backend. On Linux with an NVIDIA GPU install one with "
-    '`uv pip install "mlx[cuda12]"`; if nvidia-smi reports a driver/library version '
-    "mismatch, reboot so the freshly installed driver loads."
+    "MLX found no working GPU backend. On Linux install one with "
+    '`uv pip install "mlx[cuda12]"` (NVIDIA GPU) or `uv pip install "mlx[cpu]"` '
+    "(CPU only, slow); if nvidia-smi reports a driver/library version mismatch, "
+    "reboot so the freshly installed driver loads."
 )
 
 

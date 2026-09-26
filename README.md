@@ -38,7 +38,7 @@ An earlier [side-by-side comparison animation](demo/comparison.mp4) illustrates 
 
 ## Run
 
-`uv sync` picks the right MLX wheel for the machine: Metal on macOS, the CUDA 12 backend on Linux with an NVIDIA GPU (plain `mlx` ships no Linux backend). Startup reports the detected backend — `cuda`, `metal`, or `cpu` — and fails with install instructions when none is usable. macOS and Linux only; MLX has no Windows build.
+`uv sync` picks the right MLX wheel for the machine: Metal on macOS, the CUDA 12 backend on Linux with an NVIDIA GPU (plain `mlx` ships no Linux backend). On a CPU-only Linux box install the CPU backend instead: `uv pip install "mlx[cpu]"` — it runs the same code but slowly, fine for smoke tests, not for the benchmark. Startup reports the detected backend — `cuda`, `metal`, or `cpu` — and fails with install instructions when none is usable. macOS and Linux only; MLX has no Windows build.
 
 ```bash
 uv sync --python 3.12
