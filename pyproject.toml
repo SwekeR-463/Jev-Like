@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Minimal Jev-like structured decision benchmark"
 requires-python = ">=3.11,<3.14"
 dependencies = [
-  "mlx>=0.22",
+  "mlx>=0.22; sys_platform == 'darwin'",
+  "mlx[cuda12]>=0.32; sys_platform == 'linux'",
   "mlx-lm>=0.21",
   "mlx-vlm>=0.3.10",
 ]

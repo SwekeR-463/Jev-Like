@@ -1,5 +1,8 @@
+import types
 import unittest
+from unittest.mock import patch
 
+import jev_like.runtime as runtime
 from demo.live import transcript
 from jev_like import parse_schema
 from jev_like.benchmark import DEFAULT_DATA, expected_calibration_error, load_cases
@@ -31,6 +34,23 @@ class CoreTest(unittest.TestCase):
         text = "\n".join(line for line, _ in transcript("model", case, auto, par))
         self.assertIn("1/1 fields match expected", text)
         self.assertIn("6.0x faster", text)
+
+
+class BackendDetectionTest(unittest.TestCase):
+    def test_reports_available_backend(self):
+        stubs = [
+            (types.SimpleNamespace(cuda=types.SimpleNamespace(is_available=lambda: True)), "cuda"),
+            (types.SimpleNamespace(metal=types.SimpleNamespace(is_available=lambda: True)), "metal"),
+            (types.SimpleNamespace(), "cpu"),
+        ]
+        for stub, expected in stubs:
+            with self.subTest(expected=expected), patch.object(runtime, "mx", stub):
+                self.assertEqual(runtime.detect_backend(), expected)
+
+    def test_missing_backend_raises_with_instructions(self):
+        with patch.object(runtime, "mx", None), self.assertRaises(ImportError) as caught:
+            runtime.detect_backend()
+        self.assertIn("mlx[cuda12]", str(caught.exception))
 
 
 if __name__ == "__main__":
